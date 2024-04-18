@@ -113,7 +113,8 @@ def Duplicates(file_path):
         lines = file.readlines()
         for line in lines:
             if line.strip().startswith(("http", "https", "android")):
-                unique_lines.add(line.strip())
+                if not any(line.startswith(ignore_line) for ignore_line in ignore):
+                    unique_lines.add(line.strip())
 
     with open(output_file, 'w', encoding='latin') as file:  
         for line in unique_lines:
