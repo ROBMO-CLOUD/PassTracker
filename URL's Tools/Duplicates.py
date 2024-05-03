@@ -103,7 +103,7 @@ def Duplicates(file_path):
 
     os.system('cls' if os.name == 'nt' else 'clear')
 
-    output_folder = passtracker / "𝐔𝐑𝐋❜𝐬 𝐓𝐨𝐨𝐥𝐬"
+    output_folder = passtracker / "𝐏𝐫𝐨𝐠𝐫𝐞𝐬𝐬"
     output_folder.mkdir(parents=True, exist_ok=True)  
 
     output_file = output_folder / f"ROBMOCLOUD[NODUPLICATES]-{datetime.now().strftime('[%H%M%S]')}.txt"
