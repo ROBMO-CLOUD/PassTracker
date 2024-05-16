@@ -40,13 +40,13 @@ def convert_to_exe(archivo_py, icon_url):
             print("     Error downloading the icon. Default icon will be used.")
     
     command = f'pyinstaller --onefile --icon "{icon_path}" "{archivo_py}"'
-    print(f"Executing: {command}")
+    print(f"     Executing: {command}")
     os.system(command)
 
 icon_url = "https://raw.githubusercontent.com/ROBMO-CLOUD/PassTracker/main/Img/Logo.ico"
 
 print("     Welcome!\n")
-archivo_py = "Tools.py"  # Nombre de archivo por defecto
+archivo_py = "Tools.py"  
 if os.path.exists(archivo_py):
     response = input("     Do you want to convert the Tools.py file to Tools.exe? (Yes/No): ").strip().lower()
 
