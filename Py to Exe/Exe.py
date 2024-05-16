@@ -24,16 +24,20 @@ def select_python_file():
 
 def convert_to_exe(archivo_py, icon_url):
     if not archivo_py:
-        print("No .py file selected.")
+        print("     No .py file selected.")
+        return
+    
+    if not os.path.exists(archivo_py):
+        print(f"     The file {archivo_py} does not exist.")
         return
     
     icon_path = "icon.ico"
     if not os.path.exists(icon_path):
-        print("Downloading the icon...")
+        print("     Downloading the icon...")
         if download_icon(icon_url, icon_path):
-            print("Icon downloaded successfully.")
+            print("     Icon downloaded successfully.")
         else:
-            print("Error downloading the icon. Default icon will be used.")
+            print("     Error downloading the icon. Default icon will be used.")
     
     command = f'pyinstaller --onefile --icon "{icon_path}" "{archivo_py}"'
     print(f"Executing: {command}")
@@ -42,14 +46,16 @@ def convert_to_exe(archivo_py, icon_url):
 icon_url = "https://raw.githubusercontent.com/ROBMO-CLOUD/PassTracker/main/Img/Logo.ico"
 
 print("     Welcome!\n")
-response = input("     Do you want to convert the Tools.py file to Tools.exe? (Yes/No): ").strip().lower()
+archivo_py = "Tools.py"  # Nombre de archivo por defecto
+if os.path.exists(archivo_py):
+    response = input("     Do you want to convert the Tools.py file to Tools.exe? (Yes/No): ").strip().lower()
 
-if response == "yes":
-    archivo_py = "Tools.py"
-    print(f"\n     Automatically selecting the file {archivo_py}...\n\n")
-    
-    convert_to_exe(archivo_py, icon_url)
-elif response == "no":
-    print("Conversion will not be performed.")
+    if response == "yes":
+        print(f"\n     Automatically selecting the file {archivo_py}...\n\n")
+        convert_to_exe(archivo_py, icon_url)
+    elif response == "no":
+        print("     Conversion will not be performed.")
+    else:
+        print("     Unrecognized response. Conversion will not be performed.")
 else:
-    print("Unrecognized response. Conversion will not be performed.")
+    print(f"     The file {archivo_py} does not exist.")
