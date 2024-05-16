@@ -3,6 +3,7 @@ import shutil
 import tkinter as tk
 from tkinter import filedialog
 import requests
+import subprocess
 
 def download_icon(icon_url, save_path):
     try:
@@ -13,7 +14,7 @@ def download_icon(icon_url, save_path):
                 file.write(chunk)
         return save_path
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading the icon: {e}")
+        print(f"     Error downloading the icon: {e}")
         return None
 
 def select_python_file():
@@ -41,11 +42,22 @@ def convert_to_exe(archivo_py, icon_url):
     
     command = f'pyinstaller --onefile --icon "{icon_path}" "{archivo_py}"'
     print(f"     Executing: {command}")
-    os.system(command)
+
+    # Ejecutar el comando y capturar la salida
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    
+    # Imprimir la salida línea por línea
+    for line in iter(process.stdout.readline, b''):
+        try:
+            decoded_line = line.decode('unicode_escape').strip()
+            print(f"     {decoded_line}")
+        except UnicodeDecodeError:
+            # Si ocurre un error de decodificación, ignorar la línea
+            pass
 
 icon_url = "https://raw.githubusercontent.com/ROBMO-CLOUD/PassTracker/main/Img/Logo.ico"
 
-print("     Welcome!\n")
+print("\n\n     Welcome!\n")
 archivo_py = "Tools.py"  
 if os.path.exists(archivo_py):
     response = input("     Do you want to convert the Tools.py file to Tools.exe? (Yes/No): ").strip().lower()
