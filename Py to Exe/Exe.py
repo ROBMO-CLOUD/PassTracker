@@ -13,40 +13,43 @@ def download_icon(icon_url, save_path):
                 file.write(chunk)
         return save_path
     except requests.exceptions.RequestException as e:
-        print(f"Error al descargar el icono: {e}")
+        print(f"Error downloading the icon: {e}")
         return None
 
 def select_python_file():
     root = tk.Tk()
-    root.withdraw()  # Ocultar la ventana principal
-    archivo_py = filedialog.askopenfilename(title="Selecciona el archivo .py", filetypes=(("Archivos Python", "*.py"), ("Todos los archivos", "*.*")))
+    root.withdraw()  
+    archivo_py = filedialog.askopenfilename(title="Select the .py file", filetypes=(("Python Files", "*.py"), ("All files", "*.*")))
     return archivo_py
 
-def convertir_a_exe(archivo_py, icono_url):
-    # Seleccionar el archivo .py
+def convert_to_exe(archivo_py, icon_url):
     if not archivo_py:
-        print("No se seleccionó ningún archivo .py.")
+        print("No .py file selected.")
         return
     
-    # Descargar el icono desde la URL
     icon_path = "icon.ico"
     if not os.path.exists(icon_path):
-        print("Descargando el icono...")
-        if download_icon(icono_url, icon_path):
-            print("Icono descargado correctamente.")
+        print("Downloading the icon...")
+        if download_icon(icon_url, icon_path):
+            print("Icon downloaded successfully.")
         else:
-            print("Error al descargar el icono. Se utilizará el icono predeterminado.")
+            print("Error downloading the icon. Default icon will be used.")
     
-    # Ejecutar pyinstaller
-    comando = f'pyinstaller --onefile --icon "{icon_path}" "{archivo_py}"'
-    print(f"Ejecutando: {comando}")
-    os.system(comando)
+    command = f'pyinstaller --onefile --icon "{icon_path}" "{archivo_py}"'
+    print(f"Executing: {command}")
+    os.system(command)
 
-# URL del icono
-icono_url = "https://raw.githubusercontent.com/ROBMO-CLOUD/PassTracker/main/Img/Logo.ico"
+icon_url = "https://raw.githubusercontent.com/ROBMO-CLOUD/PassTracker/main/Img/Logo.ico"
 
-# Seleccionar el archivo .py
-archivo_py = select_python_file()
+print("     Welcome!\n")
+response = input("     Do you want to convert the Tools.py file to Tools.exe? (Yes/No): ").strip().lower()
 
-# Convertir archivo .py a .exe
-convertir_a_exe(archivo_py, icono_url)
+if response == "yes":
+    archivo_py = "Tools.py"
+    print(f"\n     Automatically selecting the file {archivo_py}...\n\n")
+    
+    convert_to_exe(archivo_py, icon_url)
+elif response == "no":
+    print("Conversion will not be performed.")
+else:
+    print("Unrecognized response. Conversion will not be performed.")
