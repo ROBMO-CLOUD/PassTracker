@@ -159,8 +159,6 @@ def Duplicates():
         output_folder = passtracker / "𝐑𝐞𝐬𝐮𝐥𝐭"
         output_folder.mkdir(parents=True, exist_ok=True)  
 
-        output_file = output_folder / f"ROBMOCLOUD[NODUPLICATES]-{datetime.now().strftime('[%H%M%S]')}.txt"
-
         unique_lines = set()
 
         with open(file_path, 'r', encoding='latin') as file:
@@ -170,13 +168,15 @@ def Duplicates():
                     if not any(line.startswith(ignore_line) for ignore_line in ignore):
                         unique_lines.add(line.strip())
 
-        with open(output_file, 'w', encoding='latin') as file:  
-            for line in unique_lines:
-                file.write(line + '\n')
-
         total_lines = len(lines)
         removed_duplicates = total_lines - len(unique_lines)
         remaining_lines = len(unique_lines)
+
+        output_file = output_folder / f"ROBMOCLOUD[NODUPLICATES]-[{remaining_lines}].txt"
+
+        with open(output_file, 'w', encoding='latin') as file:  
+            for line in unique_lines:
+                file.write(line + '\n')
 
         center(banner, Fore.RED) 
         Write.Print(f"\n\n     [•]  Total lines: {total_lines}", Colors.light_blue)
@@ -259,8 +259,6 @@ def Unknown():
         output_folder = passtracker / "𝐑𝐞𝐬𝐮𝐥𝐭"
         output_folder.mkdir(parents=True, exist_ok=True)  
 
-        output_file = output_folder / f"ROBMOCLOUD[NOUNKNOWNS]-{datetime.now().strftime('[%H%M%S]')}.txt"
-
         lines_to_keep = []
 
         with open(file_path, 'r', encoding='latin') as file:
@@ -272,13 +270,17 @@ def Unknown():
             Write.Print("\n\n     [!]  No lines found that meet the filtering criteria.", Colors.red)
             time.sleep(3)
             return
+        
+       
+
+        total_lines = sum(1 for _ in open(file_path, 'r', encoding='latin-1'))
+        removed_lines = total_lines - len(lines_to_keep)
+
+        output_file = output_folder / f"ROBMOCLOUD[NOUNKNOWNS]-[{len(lines_to_keep)}].txt"
 
         with open(output_file, 'w', encoding='latin') as file:
             for line in lines_to_keep:
                 file.write(line + '\n')
-
-        total_lines = sum(1 for _ in open(file_path, 'r', encoding='latin-1'))
-        removed_lines = total_lines - len(lines_to_keep)
 
         center(banner, Fore.RED) 
         Write.Print(f"\n\n     [•]  Total lines: {total_lines}", Colors.light_blue)
