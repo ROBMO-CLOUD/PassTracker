@@ -25,7 +25,7 @@ except:
 
 user = os.getlogin()
 
-passtracker = Path(f'C:/Users/{user}/Desktop/𝐏𝐚𝐬𝐬𝐓𝐫𝐚𝐜𝐤𝐞𝐫 ™')
+passtracker = Path(f'C:/Users/{user}/Desktop/𝐏𝐚𝐬𝐬𝐓𝐫𝐚𝐜𝐤𝐞𝐫')
 
 if not passtracker.exists():
     passtracker.mkdir()
