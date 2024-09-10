@@ -21,5 +21,5 @@ pip install soupsieve==2.6
 pip install typing_extensions==4.12.2
 pip install urllib3==2.2.2
 
-echo Instalación completa.
+echo Good....
 pause
