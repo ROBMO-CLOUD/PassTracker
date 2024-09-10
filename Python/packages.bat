@@ -1,5 +1,5 @@
 @echo off
-echo Instalando paquetes necesarios...
+echo Install...
 
 pip install altgraph==0.17.4
 pip install certifi==2024.8.30
